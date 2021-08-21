@@ -33,7 +33,8 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn run(&mut self) -> Result<&Vec<ast::ExprNode<'a>>, ErrorType> {
+
+    pub fn run(&'a mut self) -> Result<Vec<ast::ExprNode<'a>>, ErrorType> {
         while let Some(token) = self.iter.next() {
 			let token = match token {
 				Err(err) => return Err(ErrorType::LexError(err)),
@@ -41,10 +42,11 @@ impl<'a> Parser<'a> {
 			};
             self.parse(token);
         }
-        Ok(&self.ast)
+        Ok(self.ast)
     }
 
-    fn parse(&mut self, token: Token) -> Result<ast::ExprNode<'a>, ErrorType> {
+
+    fn parse(&'a mut self, token: Token) -> Result<ast::ExprNode<'a>, ErrorType> {
         match token {
             // lexer::Token::Sym(sym) => {
             //     if sym == ":=" {
@@ -73,20 +75,21 @@ impl<'a> Parser<'a> {
 
     // fn atom(&mut self, ident: lexer::Identifier) -> Result<ast::ValueNode, ErrorType> {}
 
-    fn bind(&mut self) -> Result<ast::ExprNode<'a>, ErrorType> {
+
+    fn bind(&'a mut self) -> Result<ast::ExprNode<'a>, ErrorType> {
+        let ident = match match self.ast.last().clone() {
+            None => return Err(ErrorType::ParseError(Error {})),
+            Some(expr) => expr,
+        } {
+            ast::ExprNode::Atom(atom) => atom,
+            _ => return Err(ErrorType::ParseError(Error {})),
+        };
         let val = match match self.iter.next() {
             None => return Err(ErrorType::ParseError(Error {})),
             Some(expr) => expr,
         } {
             Err(err) => return Err(ErrorType::LexError(err)),
             Ok(val) => self.parse(val)?,
-        };
-        let ident = match match self.ast.last() {
-            None => return Err(ErrorType::ParseError(Error {})),
-            Some(expr) => expr,
-        } {
-            ast::ExprNode::Atom(atom) => atom,
-            _ => return Err(ErrorType::ParseError(Error {})),
         };
         Ok(ast::ExprNode::Bind(ast::BindingNode { ident: *ident, val: Box::new(val) }))
     }
