@@ -1,4 +1,4 @@
-use std::iter::Peekable;
+use std::{borrow::BorrowMut, iter::Peekable};
 
 use nexer::lexer::{self, Token};
 
@@ -19,7 +19,6 @@ pub enum OpType {
 pub struct Error {}
 
 pub struct Parser<'a> {
-    ast: Vec<ast::ExprNode<'a>>,
     ops: &'a [(&'a str, u8, OpType)],
     iter: Peekable<lexer::TokenStream<'a>>,
 }
@@ -29,21 +28,28 @@ impl<'a> Parser<'a> {
         Self {
             iter: tokens.peekable(),
             ops,
-            ast: vec![],
         }
     }
 
-    pub fn run(&'a mut self) -> Result<Vec<ast::ExprNode<'a>>, ErrorType> {
+    pub fn parse(&'a mut self) -> Result<Vec<ast::ExprNode<'a>>, ErrorType> {
+        let mut ast: Vec<ast::ExprNode<'a>> = vec![];
         while let Some(token) = self.iter.next() {
-            self.parse(match token {
-                Err(err) => return Err(ErrorType::LexError(err)),
-                Ok(tok) => tok,
-            });
+            self.expr(
+                match token {
+                    Err(err) => return Err(ErrorType::LexError(err)),
+                    Ok(tok) => tok,
+                },
+                &mut ast,
+            );
         }
-        Ok(self.ast)
+        Ok(ast)
     }
 
-    fn parse(&'a mut self, token: Token) -> Result<ast::ExprNode<'a>, ErrorType> {
+    fn expr(
+        &'a mut self,
+        token: Token,
+        ast: &mut Vec<ast::ExprNode<'a>>,
+    ) -> Result<ast::ExprNode<'a>, ErrorType> {
         match token {
             // lexer::Token::Sym(sym) => {
             //     if sym == ":=" {
@@ -72,8 +78,11 @@ impl<'a> Parser<'a> {
 
     // fn atom(&mut self, ident: lexer::Identifier) -> Result<ast::ValueNode, ErrorType> {}
 
-    fn bind(&'a mut self) -> Result<ast::ExprNode<'a>, ErrorType> {
-        let ident = match match self.ast.last().clone() {
+    fn bind(
+        &'a mut self,
+        ast: &mut Vec<ast::ExprNode<'a>>,
+    ) -> Result<ast::ExprNode<'a>, ErrorType> {
+        let ident = match match ast.last().clone() {
             None => return Err(ErrorType::ParseError(Error {})),
             Some(expr) => expr,
         } {
@@ -85,8 +94,11 @@ impl<'a> Parser<'a> {
             Some(expr) => expr,
         } {
             Err(err) => return Err(ErrorType::LexError(err)),
-            Ok(val) => self.parse(val)?,
+            Ok(val) => self.expr(val, &mut ast)?,
         };
-        Ok(ast::ExprNode::Bind(ast::BindingNode { ident: *ident, val: Box::new(val) }))
+        Ok(ast::ExprNode::Bind(ast::BindingNode {
+            ident: *ident,
+            val: Box::new(val),
+        }))
     }
 }
