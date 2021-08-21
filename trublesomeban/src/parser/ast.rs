@@ -29,8 +29,8 @@ pub struct BinaryOperationNode<'a> {
 }
 
 pub struct BindingNode<'a> {
-    ident: AtomNode<'a>,
-    val: Box<ExprNode<'a>>,
+    pub ident: AtomNode<'a>,
+	pub val: Box<ExprNode<'a>>,
 }
 
 pub struct FunctionDeclarationNode<'a> {

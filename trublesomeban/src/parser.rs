@@ -33,17 +33,18 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn run(&mut self) -> Result<&'a Vec<ast::ExprNode>, ErrorType> {
+    pub fn run(&mut self) -> Result<&Vec<ast::ExprNode<'a>>, ErrorType> {
         while let Some(token) = self.iter.next() {
-            self.parse(match token {
-                Err(err) => return Err(ErrorType::LexError(err)),
-                Ok(tok) => tok,
-            });
+			let token = match token {
+				Err(err) => return Err(ErrorType::LexError(err)),
+				Ok(tok) => tok,
+			};
+            self.parse(token);
         }
         Ok(&self.ast)
     }
 
-    fn parse(&mut self, token: Token) -> Result<ast::ExprNode, ErrorType> {
+    fn parse(&mut self, token: Token) -> Result<ast::ExprNode<'a>, ErrorType> {
         match token {
             // lexer::Token::Sym(sym) => {
             //     if sym == ":=" {
@@ -72,7 +73,7 @@ impl<'a> Parser<'a> {
 
     // fn atom(&mut self, ident: lexer::Identifier) -> Result<ast::ValueNode, ErrorType> {}
 
-    fn bind(&'a mut self) -> Result<ast::ExprNode, ErrorType> {
+    fn bind(&mut self) -> Result<ast::ExprNode<'a>, ErrorType> {
         let val = match match self.iter.next() {
             None => return Err(ErrorType::ParseError(Error {})),
             Some(expr) => expr,
