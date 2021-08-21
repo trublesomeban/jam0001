@@ -1,0 +1,5 @@
+prec<n: lowest>: prec<(> n)> ((Sym) prec<(> n)>)*
+...
+prec<n: highest>: (atom|val) ((Sym) (atom|val))*
+atom: Ident
+val: Lit
