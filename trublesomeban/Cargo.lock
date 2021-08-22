@@ -5,7 +5,7 @@ version = 3
 [[package]]
 name = "nexer"
 version = "1.1.0"
-source = "git+https://github.com/trublesomeban/langjam-lexer#91d7ed111c3356b12caec78c521578d148f48837"
+source = "git+https://github.com/trublesomeban/langjam-lexer#a1a2bba1b7445015627b2bcacc39de4ef0a0f1fc"
 
 [[package]]
 name = "trublesomeban"

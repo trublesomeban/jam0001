@@ -30,6 +30,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ("!", 7, parser::OpType::Unary),
         ],
     )
-    .run();
+    .parse();
     Ok(())
 }

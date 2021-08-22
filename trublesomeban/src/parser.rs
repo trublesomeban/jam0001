@@ -1,6 +1,6 @@
-use std::{borrow::BorrowMut, iter::Peekable};
+use std::iter::Peekable;
 
-use nexer::lexer::{self, Token};
+use nexer::lexer::{self, token::Token};
 
 use self::ast::ExprNode;
 
@@ -33,11 +33,12 @@ impl<'a> Parser<'a> {
 
     pub fn parse(&'a mut self) -> Result<Vec<ast::ExprNode<'a>>, ErrorType> {
         let mut ast: Vec<ast::ExprNode<'a>> = vec![];
-        while let Some(token) = self.iter.next() {
+        let local_iter = &self.iter.collect::<Vec<Result<Token, nexer::lexer::Error>>>().clone();
+        for token in local_iter {
             self.expr(
                 match token {
-                    Err(err) => return Err(ErrorType::LexError(err)),
-                    Ok(tok) => tok,
+                    Err(err) => return Err(ErrorType::LexError(err.clone())),
+                    Ok(tok) => tok.clone(),
                 },
                 &mut ast,
             );
@@ -46,17 +47,17 @@ impl<'a> Parser<'a> {
     }
 
     fn expr(
-        &'a mut self,
-        token: Token,
+        &self,
+        token: lexer::token::Token,
         ast: &mut Vec<ast::ExprNode<'a>>,
     ) -> Result<ast::ExprNode<'a>, ErrorType> {
         match token {
-            // lexer::Token::Sym(sym) => {
+            // lexer::token::Token::Sym(sym) => {
             //     if sym == ":=" {
-            //         self.bind()
+            //         self.bind(ast)
             //     }
             // }
-            lexer::Token::Lit(val) => match self.val(val) {
+            lexer::token::Token::Lit(val) => match self.val(val) {
                 Err(e) => Err(ErrorType::ParseError(Error {})),
                 Ok(val) => Ok(ExprNode::Val(val)),
             },
@@ -64,12 +65,12 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn val(&mut self, literal: lexer::Literal) -> Result<ast::ValueNode, ErrorType> {
-        if let lexer::Literal::Str(s) = literal {
+    fn val(&self, literal: lexer::token::Literal) -> Result<ast::ValueNode, ErrorType> {
+        if let lexer::token::Literal::Str(s) = literal {
             Ok(ast::ValueNode::Str(s.to_string()))
-        } else if let lexer::Literal::Int(i) = literal {
+        } else if let lexer::token::Literal::Int(i) = literal {
             Ok(ast::ValueNode::Int(i.parse().unwrap()))
-        } else if let lexer::Literal::Float(f) = literal {
+        } else if let lexer::token::Literal::Float(f) = literal {
             Ok(ast::ValueNode::Float(f.parse().unwrap()))
         } else {
             Err(ErrorType::ParseError(Error {}))
@@ -82,19 +83,19 @@ impl<'a> Parser<'a> {
         &'a mut self,
         ast: &mut Vec<ast::ExprNode<'a>>,
     ) -> Result<ast::ExprNode<'a>, ErrorType> {
-        let ident = match match ast.last().clone() {
-            None => return Err(ErrorType::ParseError(Error {})),
-            Some(expr) => expr,
-        } {
-            ast::ExprNode::Atom(atom) => atom,
-            _ => return Err(ErrorType::ParseError(Error {})),
-        };
         let val = match match self.iter.next() {
             None => return Err(ErrorType::ParseError(Error {})),
             Some(expr) => expr,
         } {
             Err(err) => return Err(ErrorType::LexError(err)),
-            Ok(val) => self.expr(val, &mut ast)?,
+            Ok(val) => self.expr(val, ast)?,
+        };
+        let ident = match match ast.last() {
+            None => return Err(ErrorType::ParseError(Error {})),
+            Some(expr) => expr,
+        } {
+            ast::ExprNode::Atom(atom) => atom,
+            _ => return Err(ErrorType::ParseError(Error {})),
         };
         Ok(ast::ExprNode::Bind(ast::BindingNode {
             ident: *ident,

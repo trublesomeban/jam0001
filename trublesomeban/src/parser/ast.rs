@@ -17,27 +17,32 @@ pub enum ValueNode {
     Str(String),
 }
 
+#[derive(Debug, Clone)]
 pub struct UnaryOperationNode<'a> {
     oper: AtomNode<'a>,
-    op: lexer::Token,
+    op: lexer::token::Token,
 }
 
+#[derive(Debug, Clone)]
 pub struct BinaryOperationNode<'a> {
     lhs: AtomNode<'a>,
     rhs: AtomNode<'a>,
-    op: lexer::Token,
+    op: lexer::token::Token,
 }
 
+#[derive(Debug, Clone)]
 pub struct BindingNode<'a> {
     ident: AtomNode<'a>,
     val: Box<ExprNode<'a>>,
 }
 
+#[derive(Debug, Clone)]
 pub struct FunctionDeclarationNode<'a> {
     arg_list: Vec<AtomNode<'a>>,
     expr_list: Vec<ExprNode<'a>>,
 }
 
+#[derive(Debug, Clone)]
 pub enum ExprNode<'a> {
     BinOp(BinaryOperationNode<'a>),
     UnOp(UnaryOperationNode<'a>),
